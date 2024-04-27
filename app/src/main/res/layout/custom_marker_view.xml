@@ -5,7 +5,8 @@
         android:background="@drawable/rounded_background"
         android:layout_marginLeft="6dp"
         android:layout_marginRight="6dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
 
     <TextView
             android:textColor="@color/white"

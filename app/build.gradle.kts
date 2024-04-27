@@ -90,4 +90,6 @@ dependencies {
     implementation(libs.vico.compose.m3)
 
     implementation(libs.mpandroidchart)
+
+    implementation(libs.androidx.material.icons.extended)
 }

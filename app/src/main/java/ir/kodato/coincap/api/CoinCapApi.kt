@@ -14,6 +14,6 @@ interface CoinCapApi {
     @GET("assets/{id}/history")
     suspend fun getCoinHistory(
         @Path("id") id: String,
-        @Query("interval") interval: String = "d1"
+        @Query("interval") timeframe: String
     ): History
 }

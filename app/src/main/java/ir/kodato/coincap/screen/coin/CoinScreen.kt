@@ -75,7 +75,10 @@ fun CoinScreen(
                                 modifier = Modifier.height(64.dp),
                                 onClick = {
                                     navController.navigate(
-                                        NavScreen.HistoryScreen.passId(coinData.id)
+                                        NavScreen.HistoryScreen.passParams(
+                                            coinData.id,
+                                            coinData.symbol
+                                        )
                                     )
                                 }
                             ) {

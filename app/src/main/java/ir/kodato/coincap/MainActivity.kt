@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import ir.kodato.coincap.screen.coin.CoinScreen
 import ir.kodato.coincap.screen.coin.CoinViewModel
+import ir.kodato.coincap.screen.history.HistoryEvent
 import ir.kodato.coincap.screen.history.HistoryScreen
 import ir.kodato.coincap.screen.history.HistoryViewModel
 import ir.kodato.coincap.ui.theme.CoinCapTheme
@@ -61,8 +62,13 @@ class MainActivity : ComponentActivity() {
                                 historyState = historyState,
                                 coinName = coinName,
                                 onErrorButtonClick = {
-                                    historyViewModel.getHistory(coinName)
-                                }
+                                    historyViewModel.onEvent(
+                                        HistoryEvent.ChangeTimeframe(
+                                            historyState.selectedTimeframe
+                                        )
+                                    )
+                                },
+                                onEvent = historyViewModel::onEvent
                             )
                         }
                     }
@@ -76,11 +82,12 @@ sealed class NavScreen(val route: String) {
 
     data object CoinScreen : NavScreen("coinScreen")
 
-    data object HistoryScreen : NavScreen("historyScreen/{id}") {
-        fun passId(
-            id: String
+    data object HistoryScreen : NavScreen("historyScreen/{id}/{symbol}") {
+        fun passParams(
+            id: String,
+            symbol: String
         ): String {
-            return "historyScreen/$id"
+            return "historyScreen/$id/$symbol"
         }
     }
 }

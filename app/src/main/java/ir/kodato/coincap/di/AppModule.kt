@@ -5,6 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ir.kodato.coincap.api.CoinCapApi
+import ir.kodato.coincap.api.KuCoinApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -32,5 +33,16 @@ object AppModule {
             .client(client)
             .build()
             .create(CoinCapApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideKuCoinApi(): KuCoinApi {
+        return Retrofit.Builder()
+            .addConverterFactory(MoshiConverterFactory.create())
+            .baseUrl("https://api.kucoin.com/api/v1/")
+            .client(client)
+            .build()
+            .create(KuCoinApi::class.java)
     }
 }

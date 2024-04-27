@@ -1,8 +1,5 @@
 package ir.kodato.coincap.screen.history
 
-import android.content.Context
-import android.widget.TextView
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,36 +8,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.CandlestickChart
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavHostController
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.MarkerView
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import com.github.mikephil.charting.highlight.Highlight
-import com.github.mikephil.charting.utils.MPPointF
-import ir.kodato.coincap.R
+import ir.kodato.coincap.screen.history.component.CandleChart
+import ir.kodato.coincap.screen.history.component.LineChart
+import ir.kodato.coincap.screen.history.component.RsiChart
+import ir.kodato.coincap.util.ChartType
+import ir.kodato.coincap.util.CoinCandleData
+import ir.kodato.coincap.util.Timeframe
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +42,8 @@ fun HistoryScreen(
     navController: NavHostController,
     historyState: HistoryState,
     coinName: String,
-    onErrorButtonClick: () -> Unit
+    onErrorButtonClick: () -> Unit,
+    onEvent: (HistoryEvent) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -66,6 +60,63 @@ fun HistoryScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            onEvent(HistoryEvent.ChangeChartType)
+                        }
+                    ) {
+                        Icon(
+                            if (historyState.selectedChartType == ChartType.Line)
+                                Icons.Filled.CandlestickChart
+                            else
+                                Icons.AutoMirrored.Filled.ShowChart,
+                            "Change Chart"
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            onEvent(HistoryEvent.ChangeTimeframeDialogVisibility(true))
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            "Timeframe Dialog"
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = historyState.isTimeframeDialogOpen,
+                        onDismissRequest = {
+                            onEvent(HistoryEvent.ChangeTimeframeDialogVisibility(false))
+                        }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(text = "D1") },
+                            onClick = {
+                                onEvent(HistoryEvent.ChangeTimeframe(Timeframe.D1))
+                                onEvent(HistoryEvent.ChangeTimeframeDialogVisibility(false))
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = { Text(text = "H6") },
+                            onClick = {
+                                onEvent(HistoryEvent.ChangeTimeframe(Timeframe.H6))
+                                onEvent(HistoryEvent.ChangeTimeframeDialogVisibility(false))
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = { Text(text = "H12") },
+                            onClick = {
+                                onEvent(HistoryEvent.ChangeTimeframe(Timeframe.H12))
+                                onEvent(HistoryEvent.ChangeTimeframeDialogVisibility(false))
+                            }
                         )
                     }
                 }
@@ -95,138 +146,76 @@ fun HistoryScreen(
                     Text(text = "Try Again")
                 }
             } else {
-                historyState.history?.let { history ->
+                val pattern = when (historyState.selectedTimeframe) {
+                    Timeframe.D1 -> "MMM dd"
+                    Timeframe.H6 -> "MMM dd - HH:mm"
+                    Timeframe.H12 -> "MMM dd - HH:mm"
+                }
+                val dateFormat = SimpleDateFormat(pattern, Locale.getDefault())
 
-                    val x = mutableListOf<String>()
-                    val y = mutableListOf<Float>()
+                when (historyState.selectedChartType) {
 
-                    val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
+                    ChartType.Candle -> {
+                        historyState.candle?.let { candle ->
+                            val candleDataList = mutableListOf<CoinCandleData>()
+                            val startTimeList = mutableListOf<String>()
 
-                    for (i in history.data) {
-                        val date = Date(i.time)
-                        x.add(dateFormat.format(date))
-                        y.add(i.priceUsd.toFloat())
+                            for (i in candle.data) {
+                                val coinCandleData = CoinCandleData(
+                                    startTime = i[0].toLong(),
+                                    open = i[1].toFloat(),
+                                    close = i[2].toFloat(),
+                                    high = i[3].toFloat(),
+                                    low = i[4].toFloat(),
+                                    volume = i[5].toFloat(),
+                                    transactionAmount = i[6].toFloat()
+                                )
+                                candleDataList.add(coinCandleData)
+                                startTimeList.add(dateFormat.format(coinCandleData.startTime * 1000))
+                            }
+
+                            CandleChart(
+                                candleDataList.reversed(),
+                                dataLabel = "DataLabel",
+                                xAxisLabels = startTimeList.reversed()
+                            )
+                        }
                     }
 
-                    LineGraph(
-                        xData = x,
-                        yData = y,
-                        dataLabel = "DataLabel"
-                    )
+                    ChartType.Line -> {
+                        historyState.history?.let { history ->
+                            val x = mutableListOf<String>()
+                            val y = mutableListOf<Float>()
+
+                            for (i in history.data) {
+                                x.add(dateFormat.format(i.time))
+                                y.add(i.priceUsd.toFloat())
+                            }
+
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                LineChart(
+                                    modifier = Modifier.weight(1f),
+                                    xData = x,
+                                    yData = y,
+                                    dataLabel = "DataLabel",
+                                    chartState = historyState.chartState,
+                                    onEvent = onEvent
+                                )
+
+                                RsiChart(
+                                    modifier = Modifier.weight(0.5f),
+                                    rsiData = y,
+                                    xData = x,
+                                    chartState = historyState.chartState
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun LineGraph(
-    xData: List<String>,
-    yData: List<Float>,
-    dataLabel: String,
-    modifier: Modifier = Modifier,
-    lineColor: Color = MaterialTheme.colorScheme.primary,
-    axisTextColor: Color = MaterialTheme.colorScheme.onSurface,
-    backgroundColor: Color = MaterialTheme.colorScheme.surface,
-    drawValues: Boolean = false,
-    drawMarkers: Boolean = false,
-    drawFilled: Boolean = true,
-    descriptionEnabled: Boolean = false,
-    legendEnabled: Boolean = true,
-    xAxisPosition: XAxis.XAxisPosition = XAxis.XAxisPosition.BOTTOM
-) {
-
-    AndroidView(
-        modifier = modifier
-            .fillMaxSize()
-            .background(backgroundColor),
-        factory = { context ->
-            val chart = LineChart(context)
-
-            val entries = xData.zip(yData.withIndex()) { x, (index, y) ->
-                Entry(index.toFloat(), y).apply { data = x }
-            }
-
-            val dataSet = LineDataSet(entries, dataLabel).apply {
-                color = lineColor.toArgb()
-                setDrawValues(drawValues)
-                setDrawCircles(drawMarkers)
-                setDrawFilled(drawFilled)
-            }
-
-            chart.data = LineData(dataSet)
-
-            val marker = CustomMarkerView(context, R.layout.custom_marker_view, yData, xData)
-            chart.marker = marker
-
-//            chart.setOnChartValueSelectedListener(
-//                object : OnChartValueSelectedListener {
-//                    override fun onValueSelected(e: Entry?, h: Highlight?) {
-//                        val xIndex = e!!.x.toInt()
-//                        if (xIndex in xData.indices && xIndex in yData.indices) {
-//                            val date = xData[xIndex]
-//                            val price = yData[xIndex]
-//                            Toast.makeText(context, "$date - $price", Toast.LENGTH_SHORT).show()
-//                        }
-//                    }
-//
-//                    override fun onNothingSelected() {
-//
-//                    }
-//                }
-//            )
-
-            chart.setTouchEnabled(true)
-            chart.isDragEnabled = true
-            chart.isScaleXEnabled = true
-            chart.isScaleYEnabled = false
-
-            chart.description.isEnabled = descriptionEnabled
-            chart.legend.isEnabled = legendEnabled
-
-            chart.axisLeft.textColor = axisTextColor.toArgb()
-            chart.axisRight.isEnabled = false
-            chart.xAxis.textColor = axisTextColor.toArgb()
-            chart.xAxis.position = xAxisPosition
-            chart.legend.textColor = axisTextColor.toArgb()
-
-            chart.xAxis.valueFormatter = object : IndexAxisValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    val entry = entries.firstOrNull { it.x == value }
-                    return entry?.data as? String ?: ""
-                }
-            }
-
-            chart.invalidate()
-            chart
-        }
-    )
-}
-
-class CustomMarkerView(
-    context: Context,
-    layout: Int,
-    private val y: List<Float>,
-    private val x: List<String>,
-) : MarkerView(context, layout) {
-
-    private var txtViewData: TextView? = null
-
-    init {
-        txtViewData = findViewById(R.id.txtViewData)
-    }
-
-    override fun refreshContent(e: Entry?, highlight: Highlight?) {
-        try {
-            val xAxis = e?.x?.toInt() ?: 0
-            val text = "${y[xAxis]} - ${x[xAxis]}"
-            txtViewData?.text = text
-        } catch (e: IndexOutOfBoundsException) { }
-
-        super.refreshContent(e, highlight)
-    }
-
-    override fun getOffset(): MPPointF {
-        return MPPointF(-(width / 2f), -height.toFloat())
     }
 }
