@@ -24,7 +24,6 @@ class CoinViewModel @Inject constructor(
 
     fun getCoin() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
 
             repository.getCoins().collect { result ->
                 when (result) {

@@ -91,5 +91,8 @@ dependencies {
 
     implementation(libs.mpandroidchart)
 
+    implementation(libs.speedometer.android)
+
     implementation(libs.androidx.material.icons.extended)
+    implementation(kotlin("reflect"))
 }
