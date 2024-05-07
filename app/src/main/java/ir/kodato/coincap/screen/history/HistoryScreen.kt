@@ -33,7 +33,6 @@ fun HistoryScreen(
             errorMessage = historyState.errorMessage,
             selectedChartType = historyState.selectedChartType,
             candleChartData = historyState.candleChartData,
-            lineChartData = historyState.lineChartData,
             onErrorButtonClick = onErrorButtonClick,
             onEvent = onEvent
         )

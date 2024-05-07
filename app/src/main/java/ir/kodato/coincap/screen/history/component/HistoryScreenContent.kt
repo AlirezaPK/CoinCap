@@ -17,7 +17,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ir.kodato.coincap.screen.history.CandleChartData
 import ir.kodato.coincap.screen.history.HistoryEvent
-import ir.kodato.coincap.screen.history.LineChartData
 import ir.kodato.coincap.util.ChartType
 import ir.kodato.coincap.util.Timeframe
 
@@ -29,7 +28,6 @@ fun HistoryScreenContent(
     errorMessage: String,
     selectedChartType: ChartType,
     candleChartData: CandleChartData?,
-    lineChartData: LineChartData?,
     onErrorButtonClick: () -> Unit,
     onEvent: (HistoryEvent) -> Unit,
 ) {
@@ -68,7 +66,6 @@ fun HistoryScreenContent(
             ChartView(
                 chartType = selectedChartType,
                 candleChartData = candleChartData,
-                lineChartData = lineChartData
             )
         }
     }
