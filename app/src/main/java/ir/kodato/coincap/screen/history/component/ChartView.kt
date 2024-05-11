@@ -4,17 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.github.anastr.speedometer.SpeedView
 import ir.kodato.coincap.screen.history.CandleChartData
 import ir.kodato.coincap.util.ChartType
 import ir.kodato.coincap.util.calculateRsi
+import java.util.Locale
 
 @Composable
 fun ChartView(
@@ -50,18 +49,9 @@ fun ChartView(
 
         candleChartData?.let {
             val rsi = calculateRsi(candleChartData.candleDataList.map { it.close }).last()
-            SpeedView(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .weight(0.5f),
-                speed = rsi,
-                speedText = {
-                    Text(
-                        "RSI: $rsi",
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                },
-                unit = ""
+            GaugeChart(
+                modifier = Modifier.fillMaxWidth(),
+                value = String.format(Locale.getDefault(), "%.4f", rsi).toFloat()
             )
         }
     }
